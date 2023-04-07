@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+#last updated July 23, 2021
+
+# Set some base variables for the script
+#################################################
+# set this scripts parent path so that all relative paths will be correct
+parent_path="$PWD"
+input="$@"
+shopt -s extglob
+input="${input//[^[:alnum:]]/_}"
+input="${input##*(_)}"
+input="${input%%*(_)}"
+# input=$(echo ${input} | sed "s/_\{2,\}/_/g") # use this if you want to keep _'s but don't want more than 1 at a time
+input=$(echo ${input} | sed "s/_/ /g")
+input="${input:0:99}"
+input="${input%%*(_)}"
+echo ${input}
+
+exit 0

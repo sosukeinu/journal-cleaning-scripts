@@ -1,0 +1,122 @@
+#!/bin/bash
+#last update Jan. 15, 2019
+DEBUG=YES
+#################################################
+
+# Define functions
+#################################################
+function pause(){
+   read -p "$*"
+}
+
+function help(){
+  echo
+  echo "Usage"
+  echo
+  echo "    md-clean [-h|--help] \\"
+  echo "               (-d <directory>|--dir <directory>) \\"
+  echo "               [OPTION]..."
+  echo
+  echo "Options"
+  echo
+  echo "    -h, --help"
+  echo "        Show this information"
+  echo "    -d, --dir"
+  echo "        optional. \\"
+  echo "        define the path of the directory to list. This defaults to the current working directory. \\"
+  echo "        (ie. -d=/home/user/directory)"
+  echo
+}
+#################################################
+
+# Parsing arguments passed to the script
+# any arguments not defined below will be passed as arguments/options
+#################################################
+PASSARGS=()
+for i in "$@"
+do
+case $i in
+    -h|--help)
+    help
+    exit 0
+    ;;
+    -d=*|--dir=*)
+    DIRPASSED=YES
+    DIR="${i#*=}"
+    shift # past argument=value
+    ;;
+    *)
+    PASSARGS+=(${i}) # unknown option
+    ;;
+esac
+done
+#################################################
+now=$(date '+%Y_%m_%d_%H_%M_%S')
+
+if [ ! $DIRPASSED ]
+then
+  echo "working in directory ${PWD}"
+  dir="${PWD}"
+else
+  if [ -d "${DIR}" ]
+  then
+    echo "working in directory ${DIR}"
+    dir="${DIR}"
+  else
+    echo "supplied directory: ${DIR}, does not exist"
+    exit 1
+  fi
+fi
+# first we replace all tab characters with spaces
+# find "${dir}" -type f -name "*.md" -exec sed -i 's/\t/    /g' {} \;
+
+for f in "$dir/"*".md"
+do
+  if [ $DEBUG ]; then echo "filepath: $f"; fi
+  FILE="${f##*/}"
+  FILENAME="${FILE%.*}"
+  EXT="${f##*.}"
+  if [ $DEBUG ]; then echo "file: $FILE"; fi
+  if [ $DEBUG ]; then echo "filename: $FILENAME"; fi
+  if [ $DEBUG ]; then echo "extension: $EXT"; fi
+  FRONTMATTER=$(sed -n '/^---/p;q' "$f")
+  if [ $FRONTMATTER ]; then
+    if [ $DEBUG ]; then echo "file: $FILENAME already contains frontmatter"; fi
+    FRONTMATTER_END=$(($(awk '/---/ && ++n==2 {print NR;exit}' "$f")))
+    if [ $DEBUG ]; then echo "the frontmatter ends on line: $FRONTMATTER_END"; fi
+    cnt=0
+    FM_ARRAY=()
+    while read LINE
+    do
+    if [ "$cnt" -lt $FRONTMATTER_END ];
+    then
+      # echo $LINE
+      if [ ]; then
+        KEY=$(cut -d ':' -f 1 <<< "$LINE")
+        VALUE=$(cut -d ':' -f 2 <<< "$LINE")
+        FM_ARRAY+=(${i}) # unknown option
+      fi
+      if [ $DEBUG ]; then echo "the key is: $KEY and the value is: $VALUE"; fi
+    fi
+    cnt=$((cnt+1))
+    done < "$f"
+    # awk "NR>"$FRONTMATTER_END" && /---/ {gsub(\"-\", \"*\")} 1" "$f"
+    TITLE=$(awk "/./ { if (NR>"$FRONTMATTER_END") {print;exit}}" "$f")
+    if [ $DEBUG ]; then echo "the title is: $TITLE"; fi
+    SAFETITLE=$(./safetitle $TITLE)
+    if [ $DEBUG ]; then echo "the safetitle is: $SAFETITLE"; fi
+  else
+    if [ $DEBUG ]; then echo "file: $FILENAME does not contain frontmatter"; fi
+    TITLE=$(awk '/./ {print;exit}' "$f")
+    if [ $DEBUG ]; then echo "the title is: $TITLE"; fi
+    SAFETITLE=$(./safetitle $TITLE)
+    if [ $DEBUG ]; then echo "the safetitle is: $SAFETITLE"; fi
+  fi
+  METADATA=$(($(awk '/METADATA =========================================================================================/ {print NR;exit}' "$f") - 2))
+  if [ $DEBUG ]; then echo "metadata startline is: $METADATA"; fi
+  if [ "$METADATA" -gt 0 ]; then 
+    if [ $DEBUG ]; then echo "file: $FILENAME contains metadata"; fi
+  else
+    if [ $DEBUG ]; then echo "file: $FILENAME does not contain metadata"; fi
+  fi
+done
