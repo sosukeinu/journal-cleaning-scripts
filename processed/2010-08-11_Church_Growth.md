@@ -1,5 +1,6 @@
 ---
-tags: ["Blog_Entry"]
+title: 113 E Morenci St Lyons OH 43533
+tags:  ["Blog_Entry"]
 ---
 
 Church Growth
@@ -34,11 +35,4 @@ But, where most people would speak about church growth in a physical sense, mean
 **Couple of editorial notes** about this journal entry, I got the idea to go back and enter these blog posts this morning (March 7, 2014) while laying in bed. It seemed fitting, though there was not much content, to begin with my first ever blog post. I went back in the Day One calendar and added it on the date that it was originally written. (August 11, 2010) I will be adding other entries as time goes on in the same manner. Posted on the date that they were originally written, but marked with the date that they were actually added to the day one journal. I should also note, all metadata such as location, time, etc. is metadata from the time of entry into Day One not the original writing.
 
 
-```
-==================================================================================================
-METADATA =========================================================================================
-creation date: 2010-08-11T16:00:00Z
-tags: ['Blog Entry']
-location: {'region': {'center': {'longitude': -84.10104370117188, 'latitude': 39.7086296081543}, 'radius': 75}, 'localityName': 'Beavercreek', 'country': 'United States', 'longitude': -84.10104, 'administrativeArea': 'OH', 'placeName': '4391 Longmeadow Ln', 'latitude': 39.70863}
-weather: {'weatherServiceName': 'Forecast.io', 'windBearing': 3, 'conditionsDescription': 'Partly Cloudy', 'pressureMB': 1013.9, 'visibilityKM': 12.83, 'relativeHumidity': 74, 'windSpeedKPH': 3.98, 'weatherCode': 'fair', 'temperatureCelsius': 29}
-```
+

@@ -27,6 +27,16 @@ function help(){
   echo "        (ie. -d=/home/user/directory)"
   echo
 }
+exists(){
+  if [ "$2" != in ]; then
+    echo "Incorrect usage."
+    echo "Correct usage: exists {key} in {array}"
+    return
+  fi   
+  eval '[ ${'$3'[$1]+foobar} ]'  
+}
+
+
 print_associative_array() {
     # declare a local **reference variable** (hence `-n`) named `array_reference`
     # which is a reference to the value stored in the first parameter
@@ -97,8 +107,6 @@ else
     exit 1
   fi
 fi
-# first we replace all tab characters with spaces
-# find "${dir}" -type f -name "*.md" -exec sed -i 's/\t/    /g' {} \;
 
 for f in "$dir/"*".md"
 do
@@ -115,6 +123,7 @@ do
     if [ $DEBUG ]; then echo "file: $FILENAME already contains frontmatter"; fi
     FRONTMATTER_END=$(($(awk '/---/ && ++n==2 {print NR;exit}' "$f")))
     if [ $DEBUG ]; then echo "the frontmatter ends on line: $FRONTMATTER_END"; fi
+    START=$FRONTMATTER_END
     cnt=0
     while read LINE
     do
@@ -124,22 +133,23 @@ do
         LENGTH=$(($(echo $LINE | grep -o ":" | wc -l) +1))
         KEY=$(cut -d ':' -f 1 <<< "$LINE")
         VALUE=$(cut -d ':' -f 2-$LENGTH <<< "$LINE")
-        if [ "$KEY" == "title" ]; then KEEPTITLE="YES"; fi
+        if [ "$KEY" == "title" ]; then SAFETITLE="$VALUE"; fi
         FM_ARRAY["$KEY"]="$VALUE"
       fi
     fi
     cnt=$((cnt+1))
     done < "$f"
-    # awk "NR>"$FRONTMATTER_END" && /---/ {gsub(\"-\", \"*\")} 1" "$f"
-    if [ ! $KEEPTITLE ]
+    if [[ $(test ${FM_ARRAY["title"]+_}) ]]
     then
+      echo "no parachute!"
       TITLE=$(awk "/./ { if (NR>"$FRONTMATTER_END") {print;exit}}" "$f")
       if [ $DEBUG ]; then echo "the title is: $TITLE"; fi
       SAFETITLE=$(./safetitle $TITLE)
-      if [ $DEBUG ]; then echo "the safetitle is: $SAFETITLE"; fi
+      if [ $DEBUG ]; then echo "the safetitle is: $SAFETITLE"; fi 
     fi
   else
     if [ $DEBUG ]; then echo "file: $FILENAME does not contain frontmatter"; fi
+    START=1
     TITLE=$(awk '/./ {print;exit}' "$f")
     if [ $DEBUG ]; then echo "the title is: $TITLE"; fi
     SAFETITLE=$(./safetitle $TITLE)
@@ -151,6 +161,7 @@ do
   if [ $DEBUG ]; then echo "metadata startline is: $METADATA"; fi
   if [ "$METADATA" -gt 0 ]; then 
     if [ $DEBUG ]; then echo "file: $FILENAME contains metadata"; fi
+    END=$METADATA
     cnt=0
     declare -A META_ARRAY
     while read MLINE
@@ -174,6 +185,19 @@ do
     for key in "${!MERGED_ARRAY[@]}"; do echo "$key => ${MERGED_ARRAY[$key]}"; done
   else
     if [ $DEBUG ]; then echo "file: $FILENAME does not contain metadata"; fi
+    END=$(wc -l < "$f")
   fi
+  if [ $DEBUG ]; then echo "end: $END"; fi
+  mkdir -p processed
+  echo "---" > "$dir/processed/$FILE"
+  for key in "${!FM_ARRAY[@]}"; do echo "$key: ${FM_ARRAY[$key]}" >> "$dir/processed/$FILE" ; done
+  echo "---" >> "$dir/processed/$FILE"
+  awk "NR=="$(($START+1))",NR=="$(($END)) "$f" >> "$dir/processed/$FILE"
+  tmpfile=$(mktemp)
+  cp "$dir/processed/$FILE" "$tmpfile" &&
+    awk "NR>"${#FM_ARRAY[@]}+2" && /---/ {gsub(\"-\", \"*\")} 1" "$tmpfile" >"$dir/processed/$FILE"
+  rm "$tmpfile"
+  sed -i 's/\t/    /g' "$dir/processed/$FILE"
+  sed -i '$ s/```//g' "$dir/processed/$FILE"
   echo "======================================================================"
 done
