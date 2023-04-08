@@ -1,6 +1,5 @@
 ---
 title: History of the city of Toledo and Lucas County Ohio https archive org stream historyofcityof
-tags:  ["Blog_Entry"]
 ---
 
 Benevolent Societies — St. John's German Lu- 

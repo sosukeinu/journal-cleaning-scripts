@@ -1,6 +1,9 @@
 ---
+date:  2010-08-13T16:00:00Z
+location:  None
+tags:  ['Blog Entry']
 title:  "This is my test"
-tags:  ["Blog_Entry"]
+weather:  None
 ---
 
 Losing My Innocence

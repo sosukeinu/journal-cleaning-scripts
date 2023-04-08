@@ -1,6 +1,5 @@
 ---
 title: Male strong boxer dark sweaty bloody boxing gloves facing front in front of boxing ring camera fl
-tags:  ["Blog_Entry"]
 ---
 
 Male,strong,boxer,dark,sweaty,((bloody face)),boxing gloves,facing front,foggy, full body,camera flashes,dark studio,low key,rim light,two tone lighting, boxing arena,elated,winner,champion,championship belt right shoulder,arm raised

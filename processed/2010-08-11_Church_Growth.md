@@ -1,6 +1,9 @@
 ---
-title: 113 E Morenci St Lyons OH 43533
-tags:  ["Blog_Entry"]
+date:  2010-08-11T16:00:00Z
+location:  {'region': {'center': {'longitude': -84.10104370117188, 'latitude': 39.7086296081543}, 'radius': 75}, 'localityName': 'Beavercreek', 'country': 'United States', 'longitude': -84.10104, 'administrativeArea': 'OH', 'placeName': '4391 Longmeadow Ln', 'latitude': 39.70863}
+tags:  ['Blog Entry']
+title: Church Growth
+weather:  {'weatherServiceName': 'Forecast.io', 'windBearing': 3, 'conditionsDescription': 'Partly Cloudy', 'pressureMB': 1013.9, 'visibilityKM': 12.83, 'relativeHumidity': 74, 'windSpeedKPH': 3.98, 'weatherCode': 'fair', 'temperatureCelsius': 29}
 ---
 
 Church Growth

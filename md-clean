@@ -27,46 +27,6 @@ function help(){
   echo "        (ie. -d=/home/user/directory)"
   echo
 }
-exists(){
-  if [ "$2" != in ]; then
-    echo "Incorrect usage."
-    echo "Correct usage: exists {key} in {array}"
-    return
-  fi   
-  eval '[ ${'$3'[$1]+foobar} ]'  
-}
-
-
-print_associative_array() {
-    # declare a local **reference variable** (hence `-n`) named `array_reference`
-    # which is a reference to the value stored in the first parameter
-    # passed in
-    echo "printing associative array: $1"
-    local -n map_ref="$1"
-
-    # print the array by iterating through all of the keys now
-    for key in "${!map_ref[@]}"; do
-        value="${map_ref["$key"]}"
-        echo "  $key: $value"
-    done
-}
-merge_associative_array() {
-    # declare a local **reference variable** (hence `-n`) named `array_reference`
-    # which is a reference to the value stored in the first parameter
-    # passed in
-    # echo "merging associative arrays: $1 <--- $2"
-    local -n map_ref="$1"
-    local -n map_ref2="$2"
-
-    # setting the value of keys in the second array, to the value of the same key in the first array
-    for key in "${!map_ref2[@]}"; do
-        value="${map_ref2["$key"]}"
-        echo "  $key: $value"
-        map_ref["$key"]="$value"
-    done
-    echo "${map_ref[0]}"
-    # print_associative_array "$1"
-}
 #################################################
 
 # Parsing arguments passed to the script
@@ -110,6 +70,12 @@ fi
 
 for f in "$dir/"*".md"
 do
+  declare -gA FM_ARRAY
+  FM_ARRAY=()
+  declare -gA META_ARRAY
+  META_ARRAY=()
+  declare -gA MERGED_ARRAY
+  MERGED_ARRAY=()
   if [ $DEBUG ]; then echo "filepath: $f"; fi
   FILE="${f##*/}"
   FILENAME="${FILE%.*}"
@@ -118,7 +84,6 @@ do
   if [ $DEBUG ]; then echo "filename: $FILENAME"; fi
   if [ $DEBUG ]; then echo "extension: $EXT"; fi
   FRONTMATTER=$(sed -n '/^---/p;q' "$f")
-  declare -A FM_ARRAY
   if [ $FRONTMATTER ]; then
     if [ $DEBUG ]; then echo "file: $FILENAME already contains frontmatter"; fi
     FRONTMATTER_END=$(($(awk '/---/ && ++n==2 {print NR;exit}' "$f")))
@@ -133,20 +98,15 @@ do
         LENGTH=$(($(echo $LINE | grep -o ":" | wc -l) +1))
         KEY=$(cut -d ':' -f 1 <<< "$LINE")
         VALUE=$(cut -d ':' -f 2-$LENGTH <<< "$LINE")
-        if [ "$KEY" == "title" ]; then SAFETITLE="$VALUE"; fi
         FM_ARRAY["$KEY"]="$VALUE"
       fi
     fi
     cnt=$((cnt+1))
     done < "$f"
-    if [[ $(test ${FM_ARRAY["title"]+_}) ]]
-    then
-      echo "no parachute!"
-      TITLE=$(awk "/./ { if (NR>"$FRONTMATTER_END") {print;exit}}" "$f")
-      if [ $DEBUG ]; then echo "the title is: $TITLE"; fi
-      SAFETITLE=$(./safetitle $TITLE)
-      if [ $DEBUG ]; then echo "the safetitle is: $SAFETITLE"; fi 
-    fi
+    TITLE=$(awk "/./ { if (NR>"$FRONTMATTER_END") {print;exit}}" "$f")
+  if [ $DEBUG ]; then echo "the title is: $TITLE"; fi
+    SAFETITLE=$(./safetitle $TITLE)
+    if [ $DEBUG ]; then echo "the safetitle is: $SAFETITLE"; fi 
   else
     if [ $DEBUG ]; then echo "file: $FILENAME does not contain frontmatter"; fi
     START=1
@@ -155,7 +115,7 @@ do
     SAFETITLE=$(./safetitle $TITLE)
     if [ $DEBUG ]; then echo "the safetitle is: $SAFETITLE"; fi
   fi
-  FM_ARRAY["title"]="$SAFETITLE"
+  [[ ${FM_ARRAY["title"]+1} ]] && echo "key: title already exists" || FM_ARRAY["title"]="$SAFETITLE"
   for key in "${!FM_ARRAY[@]}"; do echo "$key => ${FM_ARRAY[$key]}"; done
   METADATA=$(($(awk '/METADATA =========================================================================================/ {print NR;exit}' "$f") - 2))
   if [ $DEBUG ]; then echo "metadata startline is: $METADATA"; fi
@@ -163,7 +123,6 @@ do
     if [ $DEBUG ]; then echo "file: $FILENAME contains metadata"; fi
     END=$METADATA
     cnt=0
-    declare -A META_ARRAY
     while read MLINE
     do
     if [ "$cnt" -gt $METADATA ];
@@ -179,23 +138,35 @@ do
     cnt=$((cnt+1))
     done < "$f"
     # for key in "${!META_ARRAY[@]}"; do echo "$key => ${META_ARRAY[$key]}"; done
-    declare -A MERGED_ARRAY
-    MERGED_ARRAY=$(merge_associative_array "FM_ARRAY" "META_ARRAY")
+    for key in "${!FM_ARRAY[@]}";
+    do
+      value="${FM_ARRAY["$key"]}"
+      MERGED_ARRAY["$key"]="$value"
+    done
+    for key in "${!META_ARRAY[@]}";
+    do
+      value="${META_ARRAY["$key"]}"
+      [[ ${MERGED_ARRAY["$key"]+1} ]] && echo "key: $key already exists in merged array" || MERGED_ARRAY["$key"]="$value"
+      MERGED_ARRAY["$key"]="$value"
+    done
     echo "merged array:"
     for key in "${!MERGED_ARRAY[@]}"; do echo "$key => ${MERGED_ARRAY[$key]}"; done
   else
     if [ $DEBUG ]; then echo "file: $FILENAME does not contain metadata"; fi
     END=$(wc -l < "$f")
+    for key in "${!FM_ARRAY[@]}"; do
+      MERGED_ARRAY["$key"]=${FM_ARRAY["$key"]}
+    done
   fi
   if [ $DEBUG ]; then echo "end: $END"; fi
   mkdir -p processed
   echo "---" > "$dir/processed/$FILE"
-  for key in "${!FM_ARRAY[@]}"; do echo "$key: ${FM_ARRAY[$key]}" >> "$dir/processed/$FILE" ; done
+  for key in "${!MERGED_ARRAY[@]}"; do echo "$key: ${MERGED_ARRAY[$key]}" ; done | sort >> "$dir/processed/$FILE"
   echo "---" >> "$dir/processed/$FILE"
   awk "NR=="$(($START+1))",NR=="$(($END)) "$f" >> "$dir/processed/$FILE"
   tmpfile=$(mktemp)
   cp "$dir/processed/$FILE" "$tmpfile" &&
-    awk "NR>"${#FM_ARRAY[@]}+2" && /---/ {gsub(\"-\", \"*\")} 1" "$tmpfile" >"$dir/processed/$FILE"
+    awk "NR>"${#MERGED_ARRAY[@]}+2" && /---/ {gsub(\"-\", \"*\")} 1" "$tmpfile" >"$dir/processed/$FILE"
   rm "$tmpfile"
   sed -i 's/\t/    /g' "$dir/processed/$FILE"
   sed -i '$ s/```//g' "$dir/processed/$FILE"
