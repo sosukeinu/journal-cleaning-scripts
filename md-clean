@@ -170,5 +170,7 @@ do
   rm "$tmpfile"
   sed -i 's/\t/    /g' "$dir/processed/$FILE"
   sed -i '$ s/```//g' "$dir/processed/$FILE"
+  sed -i 's/tags:[ ]*\["[ ]*"\]//g' "$dir/processed/$FILE"
+  sed -i 's/tags:[ ]*None//g' "$dir/processed/$FILE"
   echo "======================================================================"
 done
