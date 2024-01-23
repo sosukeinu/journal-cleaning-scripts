@@ -104,10 +104,10 @@ do
   mkdir -p processed
   if [ "${FM_ARRAY['feature']}" ]; then
     IMAGE_PATH="${FM_ARRAY['feature']}"
-    IMAGE="${IMAGE_PATH##*/}"
+    IMAGE="![](${IMAGE_PATH##*/})"
     echo "Featured Image: ${IMAGE}"
     NEXT_LINE_NUMBER=$((FRONTMATTER_END+1))
-    sed "${NEXT_LINE_NUMBER} i ${IMAGE}" "${f}" > "processed/${FILE}"
+    sed -r "${NEXT_LINE_NUMBER} i ${IMAGE}" "${f}" > "processed/${FILE}"
     # NEXT_LINE=$(sed "${NEXT_LINE_NUMBER}q;d" "$f")
     # echo "line after frontmatter: ${NEXT_LINE}"
     # NEXT_LINE_NUMBER=$((NEXT_LINE_NUMBER+1))
@@ -122,3 +122,4 @@ do
   fi
   echo "======================================================================"
 done
+echo "all done"
