@@ -1,0 +1,125 @@
+#!/bin/bash
+#last update Jan. 15, 2019
+# DEBUG=YES
+#################################################
+
+# Define functions
+#################################################
+function pause(){
+   read -p "$*"
+}
+
+function help(){
+  echo
+  echo "Usage"
+  echo
+  echo "    filename-clean [-h|--help] \\"
+  echo "               (-d <directory>|--dir <directory>) \\"
+  echo "               [OPTION]..."
+  echo
+  echo "Options"
+  echo
+  echo "    -h, --help"
+  echo "        Show this information"
+  echo "    -d, --dir"
+  echo "        optional. \\"
+  echo "        define the path of the directory to process. This defaults to the current working directory. \\"
+  echo "        (ie. -d=/home/user/directory)"
+  echo
+}
+#################################################
+
+# Parsing arguments passed to the script
+# any arguments not defined below will be passed as arguments/options
+#################################################
+PASSARGS=()
+for i in "$@"
+do
+case $i in
+    -h|--help)
+    help
+    exit 0
+    ;;
+    -d=*|--dir=*)
+    DIRPASSED=YES
+    DIR="${i#*=}"
+    shift # past argument=value
+    ;;
+    *)
+    PASSARGS+=(${i}) # unknown option
+    ;;
+esac
+done
+#################################################
+now=$(date '+%Y_%m_%d_%H_%M_%S')
+
+if [ ! $DIRPASSED ]
+then
+  echo "working in directory ${PWD}"
+  dir="${PWD}"
+else
+  if [ -d "${DIR}" ]
+  then
+    echo "working in directory ${DIR}"
+    dir="${DIR}"
+  else
+    echo "supplied directory: ${DIR}, does not exist"
+    exit 1
+  fi
+fi
+
+for f in "$dir/"*".md"
+do
+  declare -gA FM_ARRAY
+  FM_ARRAY=()
+  if [ $DEBUG ]; then echo "filepath: $f"; fi
+  FILE="${f##*/}"
+  FILENAME="${FILE%.*}"
+  EXT="${f##*.}"
+  if [ $DEBUG ]; then echo "file: $FILE"; fi
+  if [ $DEBUG ]; then echo "filename: $FILENAME"; fi
+  if [ $DEBUG ]; then echo "extension: $EXT"; fi
+  FRONTMATTER=$(sed -n '/^---/p;q' "$f")
+  if [ $FRONTMATTER ]; then
+    FRONTMATTER_END=$(($(awk '/---/ && ++n==2 {print NR;exit}' "$f")))
+    if [ $DEBUG ]; then echo "the frontmatter ends on line: $FRONTMATTER_END"; fi
+    START=$FRONTMATTER_END
+    cnt=0
+    while read LINE
+    do
+    if [ "$cnt" -lt $FRONTMATTER_END ];
+    then
+      if [[ "$LINE" =~ .*":".* ]];  then
+        LENGTH=$(($(echo $LINE | grep -o ":" | wc -l) +1))
+        KEY=$(cut -d ':' -f 1 <<< "$LINE")
+        VALUE=$(cut -d ':' -f 2-$LENGTH <<< "$LINE")
+        FM_ARRAY["$KEY"]="$VALUE"
+      fi
+    fi
+    cnt=$((cnt+1))
+    done < "$f"
+    TITLE=$(awk "/./ { if (NR>"$FRONTMATTER_END") {print;exit}}" "$f")
+  fi
+  # for key in "${!FM_ARRAY[@]}"; do echo "$key => ${FM_ARRAY[$key]}"; done
+  mkdir -p processed
+  if [ "${FM_ARRAY['feature']}" ]; then
+    IMAGE_PATH="${FM_ARRAY['feature']}"
+    IMAGE="![](${IMAGE_PATH##*/})"
+    echo "Featured Image: ${IMAGE}"
+    NEXT_LINE_NUMBER=$((FRONTMATTER_END+1))
+    sed -r "${NEXT_LINE_NUMBER} i ${IMAGE}" "${f}" > "processed/${FILE}"
+    # NEXT_LINE=$(sed "${NEXT_LINE_NUMBER}q;d" "$f")
+    # echo "line after frontmatter: ${NEXT_LINE}"
+    # NEXT_LINE_NUMBER=$((NEXT_LINE_NUMBER+1))
+    # NEXT_LINE=$(sed "${NEXT_LINE_NUMBER}q;d" "$f")
+    # echo "next line frontmatter: ${NEXT_LINE}"
+    # NEXT_LINE_NUMBER=$((NEXT_LINE_NUMBER+1))
+    # NEXT_LINE=$(sed "${NEXT_LINE_NUMBER}q;d" "$f")
+    # echo "next line frontmatter: ${NEXT_LINE}"
+    # NEXT_LINE_NUMBER=$((NEXT_LINE_NUMBER+1))
+    # NEXT_LINE=$(sed "${NEXT_LINE_NUMBER}q;d" "$f")
+    # echo "next line frontmatter: ${NEXT_LINE}"
+  fi
+  echo "======================================================================"
+done
+echo "all done"

@@ -1,0 +1,96 @@
+#!/bin/bash
+#last update Jan. 15, 2019
+DEBUG=YES
+#################################################
+
+# Define functions
+#################################################
+function pause(){
+   read -p "$*"
+}
+
+function help(){
+  echo
+  echo "Usage"
+  echo
+  echo "    filename-string-replace [-h|--help] \\"
+  echo "               (-d <directory>|--dir <directory>) \\"
+  echo "               [OPTION]..."
+  echo
+  echo "Options"
+  echo
+  echo "    -h, --help"
+  echo "        Show this information"
+  echo "    -d, --dir"
+  echo "        optional. \\"
+  echo "        define the path of the directory to process. This defaults to the current working directory. \\"
+  echo "        (ie. -d=/home/user/directory)"
+  echo
+}
+#################################################
+
+# Parsing arguments passed to the script
+# any arguments not defined below will be passed as arguments/options
+#################################################
+PASSARGS=()
+for i in "$@"
+do
+case $i in
+    -h|--help)
+    help
+    exit 0
+    ;;
+    -d=*|--dir=*)
+    DIRPASSED=YES
+    DIR="${i#*=}"
+    shift # past argument=value
+    ;;
+    *)
+    PASSARGS+=(${i}) # unknown option
+    ;;
+esac
+done
+#################################################
+now=$(date '+%Y_%m_%d_%H_%M_%S')
+
+if [ ! $DIRPASSED ]
+then
+  echo "working in directory ${PWD}"
+  dir="${PWD}"
+else
+  if [ -d "${DIR}" ]
+  then
+    echo "working in directory ${DIR}"
+    dir="${DIR}"
+  else
+    echo "supplied directory: ${DIR}, does not exist"
+    exit 1
+  fi
+fi
+
+for f in "$dir/"*".md"
+do
+  if [ $DEBUG ]; then echo "filepath: $f"; fi
+  FILE="${f##*/}"
+  FILENAME="${FILE%.*}"
+  EXT="${f##*.}"
+  if [ $DEBUG ]; then echo "file: $FILE"; fi
+  if [ $DEBUG ]; then echo "filename: $FILENAME"; fi
+  if [ $DEBUG ]; then echo "extension: $EXT"; fi
+  mkdir -p processed
+  while read line; do
+    IFS=$'\t'; read field1 field2 <<< "${line}"
+    first_val=$(echo "${field1}" | sed 's/\.md//')
+    second_val=$(echo "${field2}" | sed 's/\.md//')
+    echo "replace: ${first_val} with ${second_val}"
+    # inline links [[ ]]
+    # hugo inline links 
+    # echo "${first_val} -->"
+    # echo "${second_val} <--"
+    # echo "$line"
+    # echo "$line" | awk '{print line $1 - $2}' 
+    # sed "s/${first_val}/${second_val}/gp" "${f}" 
+  done < change-map.tsv
+
+  echo "======================================================================"
+done

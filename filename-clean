@@ -1,0 +1,156 @@
+#!/bin/bash
+#last update Jan. 15, 2019
+DEBUG=YES
+#################################################
+
+# Define functions
+#################################################
+function pause(){
+   read -p "$*"
+}
+
+function help(){
+  echo
+  echo "Usage"
+  echo
+  echo "    filename-clean [-h|--help] \\"
+  echo "               (-d <directory>|--dir <directory>) \\"
+  echo "               [OPTION]..."
+  echo
+  echo "Options"
+  echo
+  echo "    -h, --help"
+  echo "        Show this information"
+  echo "    -d, --dir"
+  echo "        optional. \\"
+  echo "        define the path of the directory to process. This defaults to the current working directory. \\"
+  echo "        (ie. -d=/home/user/directory)"
+  echo
+}
+#################################################
+
+# Parsing arguments passed to the script
+# any arguments not defined below will be passed as arguments/options
+#################################################
+PASSARGS=()
+for i in "$@"
+do
+case $i in
+    -h|--help)
+    help
+    exit 0
+    ;;
+    -d=*|--dir=*)
+    DIRPASSED=YES
+    DIR="${i#*=}"
+    shift # past argument=value
+    ;;
+    *)
+    PASSARGS+=(${i}) # unknown option
+    ;;
+esac
+done
+#################################################
+now=$(date '+%Y_%m_%d_%H_%M_%S')
+
+if [ ! $DIRPASSED ]
+then
+  echo "working in directory ${PWD}"
+  dir="${PWD}"
+else
+  if [ -d "${DIR}" ]
+  then
+    echo "working in directory ${DIR}"
+    dir="${DIR}"
+  else
+    echo "supplied directory: ${DIR}, does not exist"
+    exit 1
+  fi
+fi
+
+for f in "$dir/"*".md"
+do
+  declare -gA FM_ARRAY
+  FM_ARRAY=()
+  if [ $DEBUG ]; then echo "filepath: $f"; fi
+  FILE="${f##*/}"
+  FILENAME="${FILE%.*}"
+  EXT="${f##*.}"
+  if [ $DEBUG ]; then echo "file: $FILE"; fi
+  if [ $DEBUG ]; then echo "filename: $FILENAME"; fi
+  if [ $DEBUG ]; then echo "extension: $EXT"; fi
+  fileNamePattern="^[0-9]+-[0-9]+-[0-9]+-[a-z0-9\-]+\.md$"
+  # if [[ $FILE =~ $fileNamePattern ]] || [[ $FILE == "_index.md" ]]; then
+  #   echo "skipping ${FILE}"
+  #   continue
+  # else
+    FRONTMATTER=$(sed -n '/^---/p;q' "$f")
+    if [ $FRONTMATTER ]; then
+      if [ $DEBUG ]; then echo "file: $FILENAME already contains frontmatter"; fi
+      FRONTMATTER_END=$(($(awk '/---/ && ++n==2 {print NR;exit}' "$f")))
+      if [ $DEBUG ]; then echo "the frontmatter ends on line: $FRONTMATTER_END"; fi
+      START=$FRONTMATTER_END
+      cnt=0
+      while read LINE
+      do
+      if [ "$cnt" -lt $FRONTMATTER_END ];
+      then
+        if [[ "$LINE" =~ .*":".* ]];  then
+          LENGTH=$(($(echo $LINE | grep -o ":" | wc -l) +1))
+          KEY=$(cut -d ':' -f 1 <<< "$LINE")
+          VALUE=$(cut -d ':' -f 2-$LENGTH <<< "$LINE")
+          FM_ARRAY["$KEY"]="$VALUE"
+        fi
+      fi
+      cnt=$((cnt+1))
+      done < "$f"
+      TITLE=$(awk "/./ { if (NR>"$FRONTMATTER_END") {print;exit}}" "$f")
+      if [ $DEBUG ]; then echo "the title is: $TITLE"; fi
+    else
+      if [ $DEBUG ]; then echo "file: $FILENAME does not contain frontmatter"; fi
+      START=1
+      TITLE=$(awk '/./ {print;exit}' "$f")
+      if [ $DEBUG ]; then echo "the title is: $TITLE"; fi
+    fi
+    [[ ${FM_ARRAY["title"]+1} ]] && echo "key: title already exists" || FM_ARRAY["title"]="$TITLE"
+    for key in "${!FM_ARRAY[@]}"; do echo "$key => ${FM_ARRAY[$key]}"; done
+
+    CREATED_DATE=$(date --date="${FM_ARRAY['date']}" '+%Y-%m-%d')
+    SAFETITLE=$(./safetitle "${FM_ARRAY['title']}")
+    if [ ${SAFETITLE} == '' ]; then
+      echo "ERROR!!!!!! title: ${TITLE} rendered safetitle: ${SAFETITLE}" > "processed/errors.txt"
+      NEW_NAME=${CREATED_DATE}.md
+    else
+      NEW_NAME=${CREATED_DATE}-${SAFETITLE}.md
+    fi
+    echo "New Filename: ${NEW_NAME}"
+    mkdir -p processed
+    touch change-map.tsv
+    if [[ -e "processed/${NEW_NAME}" ]]; then
+      CREATED_DATE=$(date --date="${FM_ARRAY['date']}" '+%Y-%m-%d-%H-%M-%S')
+      NEW_NAME=${CREATED_DATE}-${SAFETITLE}.md
+      echo "New Filename: ${NEW_NAME}"
+    fi
+    cp "${f}" "processed/${NEW_NAME}"
+    echo -e "${FILE}\t${NEW_NAME}" >> change-map.tsv
+    # if [[ ! -e processed/new-names.txt ]]; then
+    #   touch processed/new-names.txt
+    #   echo "${CREATED_DATE}-${SAFETITLE}.md"  > processed/new-names.txt
+    # else
+    #   echo "${CREATED_DATE}-${SAFETITLE}.md"  >> processed/new-names.txt
+    # fi 
+    # echo "---" > "$dir/processed/$FILE"
+    # for key in "${!MERGED_ARRAY[@]}"; do echo "$key: ${MERGED_ARRAY[$key]}" ; done | sort >> "$dir/processed/$FILE"
+    # echo "---" >> "$dir/processed/$FILE"
+    # awk "NR=="$(($START+1))",NR=="$(($END)) "$f" >> "$dir/processed/$FILE"
+    # tmpfile=$(mktemp)
+    # cp "$dir/processed/$FILE" "$tmpfile" &&
+    #   awk "NR>"${#MERGED_ARRAY[@]}+2" && /---/ {gsub(\"-\", \"*\")} 1" "$tmpfile" >"$dir/processed/$FILE"
+    # rm "$tmpfile"
+    # sed -i 's/\t/    /g' "$dir/processed/$FILE"
+    # sed -i '$ s/```//g' "$dir/processed/$FILE"
+    # sed -i 's/tags:[ ]*\["[ ]*"\]//g' "$dir/processed/$FILE"
+    # sed -i 's/tags:[ ]*None//g' "$dir/processed/$FILE"
+    echo "======================================================================"
+  # fi
+done

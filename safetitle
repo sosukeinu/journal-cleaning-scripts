@@ -1,19 +1,49 @@
 #!/usr/bin/env bash
 #last updated July 23, 2021
-
+DEBUG=''
 # Set some base variables for the script
 #################################################
 # set this scripts parent path so that all relative paths will be correct
 parent_path="$PWD"
 input="$@"
 shopt -s extglob
-input="${input//[^[:alnum:]]/_}"
-input="${input##*(_)}"
-input="${input%%*(_)}"
-# input=$(echo ${input} | sed "s/_\{2,\}/_/g") # use this if you want to keep _'s but don't want more than 1 at a time
-input=$(echo ${input} | sed "s/_/ /g")
-input="${input:0:99}"
-input="${input%%*(_)}"
+#####################################################
+# if [ $DEBUG ]; then echo "original input: $input"; fi
+# input="${input//[^[:alnum:]]/_}"
+# if [ $DEBUG ]; then echo "after removing all non-alphanum: $input"; fi
+# input="${input##*(_)}"
+# if [ $DEBUG ]; then echo "step 2: $input"; fi
+# input="${input%%*(_)}"
+# if [ $DEBUG ]; then echo "step 3: $input"; fi
+# # input=$(echo ${input} | sed "s/_\{2,\}/_/g") # use this if you want to keep _'s but don't want more than 1 at a time
+# input=$(echo ${input} | sed "s/_/ /g")
+# if [ $DEBUG ]; then echo "step 4: $input"; fi
+# input="${input:0:99}"
+# if [ $DEBUG ]; then echo "step 5: $input"; fi
+# input="${input%%*(_)}"
+# if [ $DEBUG ]; then echo "step 6: $input"; fi
+#####################################################
+if [ $DEBUG ]; then echo "original input: $input"; fi
+# replace anything that is not alphnum with -
+input="${input//[^[:alnum:]]/-}"
+if [ $DEBUG ]; then echo "after replacing all non-alphanum with '-': $input"; fi
+# remove any leading -
+input="${input##*(-)}"
+if [ $DEBUG ]; then echo "after removing all leading '-': $input"; fi
+# remove any trailing -
+input="${input%%*(-)}"
+if [ $DEBUG ]; then echo "after removing all trailing '-': $input"; fi
+# keep no more than one - at a time in the middle of the string
+input=$(echo ${input} | sed "s/-\{2,\}/-/g")
+if [ $DEBUG ]; then echo "after limiting internal '-' to one in a row: $input"; fi
+# limit to 30 characters total
+input="${input:0:29}"
+if [ $DEBUG ]; then echo "after limiting total characters to 30: $input"; fi
+# remove any trailing - (which may have been introduced by cutting characters
+input="${input%%*(-)}"
+# cast to lowercase
+input="${input,,}"
+if [ $DEBUG ]; then echo "after casting to lowercase: $input"; fi
 echo ${input}
 
 exit 0
