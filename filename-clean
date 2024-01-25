@@ -1,6 +1,6 @@
 #!/bin/bash
 #last update Jan. 15, 2019
-DEBUG=YES
+# DEBUG=YES
 #################################################
 
 # Define functions
@@ -115,24 +115,38 @@ do
     [[ ${FM_ARRAY["title"]+1} ]] && echo "key: title already exists" || FM_ARRAY["title"]="$TITLE"
     for key in "${!FM_ARRAY[@]}"; do echo "$key => ${FM_ARRAY[$key]}"; done
 
-    CREATED_DATE=$(date --date="${FM_ARRAY['date']}" '+%Y-%m-%d')
-    SAFETITLE=$(./safetitle "${FM_ARRAY['title']}")
-    if [ ${SAFETITLE} == '' ]; then
-      echo "ERROR!!!!!! title: ${TITLE} rendered safetitle: ${SAFETITLE}" > "processed/errors.txt"
-      NEW_NAME=${CREATED_DATE}.md
-    else
-      NEW_NAME=${CREATED_DATE}-${SAFETITLE}.md
-    fi
-    echo "New Filename: ${NEW_NAME}"
-    mkdir -p processed
-    touch change-map.tsv
-    if [[ -e "processed/${NEW_NAME}" ]]; then
-      CREATED_DATE=$(date --date="${FM_ARRAY['date']}" '+%Y-%m-%d-%H-%M-%S')
-      NEW_NAME=${CREATED_DATE}-${SAFETITLE}.md
-      echo "New Filename: ${NEW_NAME}"
-    fi
-    cp "${f}" "processed/${NEW_NAME}"
-    echo -e "${FILE}\t${NEW_NAME}" >> change-map.tsv
+TAGS="${FM_ARRAY['tags']}"
+IFS=","
+COMBO=""
+for i in ${TAGS}
+do
+  SAFETAG=$(./safetitle "${i}")
+  echo ${SAFETAG}
+  COMBO="${COMBO},${SAFETAG},"
+done
+echo "${COMBO}"
+IFS=" "
+NEW_TAGS="[$(echo ${COMBO} | sed 's/,\{2,\}/,/g' | sed 's/^,//g' | sed 's/,$//g')]"
+sed -i "s/tags:.+$/tags: ${NEW_TAGS}/g" "${f}"
+    # CREATED_DATE=$(date --date="${FM_ARRAY['date']}" '+%Y-%m-%d')
+    # SAFETITLE=$(./safetitle "${FM_ARRAY['title']}")
+    # if [ ${SAFETITLE} == '' ]; then
+    #   echo "ERROR!!!!!! title: ${TITLE} rendered safetitle: ${SAFETITLE}" > "processed/errors.txt"
+    #   NEW_NAME=${CREATED_DATE}.md
+    # else
+    #   NEW_NAME=${CREATED_DATE}-${SAFETITLE}.md
+    # fi
+    # echo "New Filename: ${NEW_NAME}"
+    # mkdir -p processed
+    # touch change-map.tsv
+    # if [[ -e "processed/${NEW_NAME}" ]]; then
+    #   CREATED_DATE=$(date --date="${FM_ARRAY['date']}" '+%Y-%m-%d-%H-%M-%S')
+    #   NEW_NAME=${CREATED_DATE}-${SAFETITLE}.md
+    #   echo "New Filename: ${NEW_NAME}"
+    # fi
+    # cp "${f}" "processed/${NEW_NAME}"
+    # echo -e "${FILE}\t${NEW_NAME}" >> change-map.tsv
+    # ##################################################################################################
     # if [[ ! -e processed/new-names.txt ]]; then
     #   touch processed/new-names.txt
     #   echo "${CREATED_DATE}-${SAFETITLE}.md"  > processed/new-names.txt
@@ -151,6 +165,8 @@ do
     # sed -i '$ s/```//g' "$dir/processed/$FILE"
     # sed -i 's/tags:[ ]*\["[ ]*"\]//g' "$dir/processed/$FILE"
     # sed -i 's/tags:[ ]*None//g' "$dir/processed/$FILE"
+    # ##################################################################################################
     echo "======================================================================"
   # fi
 done
+echo "all done."
