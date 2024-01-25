@@ -112,8 +112,8 @@ do
       TITLE=$(awk '/./ {print;exit}' "$f")
       if [ $DEBUG ]; then echo "the title is: $TITLE"; fi
     fi
-    [[ ${FM_ARRAY["title"]+1} ]] && echo "key: title already exists" || FM_ARRAY["title"]="$TITLE"
-    for key in "${!FM_ARRAY[@]}"; do echo "$key => ${FM_ARRAY[$key]}"; done
+    # [[ ${FM_ARRAY["title"]+1} ]] && echo "key: title already exists" || FM_ARRAY["title"]="$TITLE"
+    # for key in "${!FM_ARRAY[@]}"; do echo "$key => ${FM_ARRAY[$key]}"; done
 
 TAGS="${FM_ARRAY['tags']}"
 IFS=","
@@ -121,13 +121,15 @@ COMBO=""
 for i in ${TAGS}
 do
   SAFETAG=$(./safetitle "${i}")
-  echo ${SAFETAG}
+  # echo ${SAFETAG}
   COMBO="${COMBO},${SAFETAG},"
 done
-echo "${COMBO}"
+# echo "${COMBO}"
 IFS=" "
 NEW_TAGS="[$(echo ${COMBO} | sed 's/,\{2,\}/,/g' | sed 's/^,//g' | sed 's/,$//g')]"
-sed -i "s/tags:.+$/tags: ${NEW_TAGS}/g" "${f}"
+# echo "trying to replace: ${TAGS} with ${NEW_TAGS}"
+sed -i "s/tags\:.*/tags\: ${NEW_TAGS}/g" "${f}" 
+
     # CREATED_DATE=$(date --date="${FM_ARRAY['date']}" '+%Y-%m-%d')
     # SAFETITLE=$(./safetitle "${FM_ARRAY['title']}")
     # if [ ${SAFETITLE} == '' ]; then
