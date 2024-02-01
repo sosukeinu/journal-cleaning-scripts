@@ -1,0 +1,165 @@
+#!/bin/bash
+#last update Jan. 15, 2019
+DEBUG=YES
+#################################################
+
+# Define functions
+#################################################
+function pause(){
+   read -p "$*"
+}
+
+function help(){
+  echo
+  echo "Usage"
+  echo
+  echo "    filename-clean [-h|--help] \\"
+  echo "               (-d <directory>|--dir <directory>) \\"
+  echo "               [OPTION]..."
+  echo
+  echo "Options"
+  echo
+  echo "    -h, --help"
+  echo "        Show this information"
+  echo "    -d, --dir"
+  echo "        optional. \\"
+  echo "        define the path of the directory to process. This defaults to the current working directory. \\"
+  echo "        (ie. -d=/home/user/directory)"
+  echo
+}
+
+function safeString(){
+  input="$*"
+  shopt -s extglob
+  # if [ $DEBUG ]; then echo "original input: $input"; fi
+# replace anything that is not alphnum with -
+  input="${input//[^[:alnum:]]/-}"
+  # if [ $DEBUG ]; then echo "after replacing all non-alphanum with '-': $input"; fi
+  # remove any leading -
+  input="${input##*(-)}"
+  # if [ $DEBUG ]; then echo "after removing all leading '-': $input"; fi
+  # remove any trailing -
+  input="${input%%*(-)}"
+  # if [ $DEBUG ]; then echo "after removing all trailing '-': $input"; fi
+  # keep no more than one - at a time in the middle of the string
+  input=$(echo ${input} | sed "s/-\{2,\}/-/g")
+  # if [ $DEBUG ]; then echo "after limiting internal '-' to one in a row: $input"; fi
+  # limit to 30 characters total
+  input="${input:0:29}"
+  # if [ $DEBUG ]; then echo "after limiting total characters to 30: $input"; fi
+  # remove any trailing - (which may have been introduced by cutting characters
+  input="${input%%*(-)}"
+  # cast to lowercase
+  input="${input,,}"
+  # if [ $DEBUG ]; then echo "after casting to lowercase: $input"; fi
+  echo ${input}
+}
+
+#################################################
+
+# Parsing arguments passed to the script
+# any arguments not defined below will be passed as arguments/options
+#################################################
+PASSARGS=()
+for i in "$@"
+do
+case $i in
+    -h|--help)
+    help
+    exit 0
+    ;;
+    -d=*|--dir=*)
+    DIRPASSED=YES
+    DIR="${i#*=}"
+    shift # past argument=value
+    ;;
+    *)
+    PASSARGS+=(${i}) # unknown option
+    ;;
+esac
+done
+#################################################
+now=$(date '+%Y_%m_%d_%H_%M_%S')
+
+if [ ! $DIRPASSED ]
+then
+  echo "working in directory ${PWD}"
+  dir="${PWD}"
+else
+  if [ -d "${DIR}" ]
+  then
+    echo "working in directory ${DIR}"
+    dir="${DIR}"
+  else
+    echo "supplied directory: ${DIR}, does not exist"
+    exit 1
+  fi
+fi
+
+mkdir -p tmp
+rm -Rf tmp/*
+cd tmp && csplit -z --prefix="tmp_notes_" --suppress-matched --digits=3 "../test.notes" '/^\*\*\*\*\*/' '{*}' && cd ..
+
+# This is just for my Latin Quotes
+# for t in tmp/tmp_notes_*
+# do
+#   sed -z 's/:\s*/: /g' "${t}" -i
+# done
+# This is just for my Latin Quotes
+
+cite="Evans, Betty, et al. _Black Beauty_. Ladybird Books Ltd., 2012."
+tags="[quote]"
+draft="false"
+timestring=$(date '+%Y-%m-%dT%H:%M:%S%z')
+
+mkdir -p processed
+rm -Rf processed/*
+for f in tmp/tmp_notes_*
+do
+  quote=$(sed -n '/./{p;q;}' "${f}")
+  note=$(sed '0,/--/d' "${f}")
+
+# This is just for my Latin Quotes
+  # OIFS=$IFS
+  # count=0
+  # IFS=':'
+  # in="${quote}"
+  # for x in $in
+  # do
+  #   count=$((count+1))
+  #   if [[ ${count} -lt 3 ]]; then
+  #     title=$(echo "${x}" | xargs -0) # This will always select the second part of a string split on ":"
+  #   fi
+  # done
+  #
+  # IFS=$OIFS
+# This is just for my Latin Quotes
+  title="${quote}"
+  title="${title:0:35}"
+  title="${title##*(-)}"
+  title="${title%%*(-)}"
+  title=$(echo "${quote}" | input="${input##*(-)} | "xargs -0)
+  
+
+  filename=$(date '+%Y-%m-%d')-$(safeString "${title}").md
+
+  echo "saving file as: ${filename}"
+
+  echo "---" > "processed/${filename}"
+  echo "date: ${timestring}" >> "processed/${filename}"
+  echo "lastmod: ${timestring}" >> "processed/${filename}"
+  echo "tags: ${tags}" >> "processed/${filename}"
+  echo "draft: ${draft}" >> "processed/${filename}"
+  echo "title: ${title:0:35}" >> "processed/${filename}"
+  echo "---" >> "processed/${filename}"
+  echo "" >> "processed/${filename}"
+  echo ">\"${quote}\"" >> "processed/${filename}"
+  echo "" >> "processed/${filename}"
+  echo "${cite}" >> "processed/${filename}"
+  echo "" >> "processed/${filename}"
+  if [[ ${note} != "" ]]; then echo "${note}" >> "processed/${filename}"; fi
+  echo "" >> "processed/${filename}"
+done
+echo "Fin."
+exit 0
+
