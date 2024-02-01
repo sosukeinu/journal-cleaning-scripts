@@ -136,9 +136,8 @@ do
 # This is just for my Latin Quotes
   title="${quote}"
   title="${title:0:35}"
-  title="${title##*(-)}"
-  title="${title%%*(-)}"
-  title=$(echo "${quote}" | input="${input##*(-)} | "xargs -0)
+  title="${title//[^[:alnum:].?\'-]/}"
+  title=$(echo "${quote}" | xargs -0)
   
 
   filename=$(date '+%Y-%m-%d')-$(safeString "${title}").md
@@ -153,7 +152,7 @@ do
   echo "title: ${title:0:35}" >> "processed/${filename}"
   echo "---" >> "processed/${filename}"
   echo "" >> "processed/${filename}"
-  echo ">\"${quote}\"" >> "processed/${filename}"
+  [[ "${quote}" =~ ^*\"*$ ]] && echo ">\'${quote}\'" >> "processed/${filename}" || echo ">\"${quote}\"" >> "processed/${filename}"
   echo "" >> "processed/${filename}"
   echo "${cite}" >> "processed/${filename}"
   echo "" >> "processed/${filename}"
