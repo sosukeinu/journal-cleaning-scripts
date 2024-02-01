@@ -55,6 +55,13 @@ function safeString(){
   echo ${input}
 }
 
+function titleCase(){ set ${*,,} ; set ${*^} ; echo -n "$1 " ; shift 1 ; \
+  for f in ${*} ; do \
+    case $f in  A|The|Is|Of|And|Or|But|About|To|In|By) \
+      echo -n "${f,,} " ;; \
+      *) echo -n "$f " ;; \
+  esac ; \
+done ; echo ; }
 #################################################
 
 # Parsing arguments passed to the script
@@ -107,7 +114,7 @@ cd tmp && csplit -z --prefix="tmp_notes_" --suppress-matched --digits=3 "../test
 # done
 # This is just for my Latin Quotes
 
-cite="Evans, Betty, et al. _Black Beauty_. Ladybird Books Ltd., 2012."
+cite="Tolkien, J. R. R. _The Lord of the Rings_. Houghton Mifflin Harcourt."
 tags="[quote]"
 draft="false"
 timestring=$(date '+%Y-%m-%dT%H:%M:%S%z')
@@ -136,8 +143,9 @@ do
 # This is just for my Latin Quotes
   title="${quote}"
   title="${title:0:35}"
-  title="${title//[^[:alnum:].?\'-]/}"
-  title=$(echo "${quote}" | xargs -0)
+  title=$(echo "${title}" | sed 's/^\"//')
+  title=$(echo "${title}" | sed 's/\"$//')
+  title=$(echo $(titleCase "${title}") | xargs -0)
   
 
   filename=$(date '+%Y-%m-%d')-$(safeString "${title}").md
@@ -152,7 +160,7 @@ do
   echo "title: ${title:0:35}" >> "processed/${filename}"
   echo "---" >> "processed/${filename}"
   echo "" >> "processed/${filename}"
-  [[ "${quote}" =~ ^*\"*$ ]] && echo ">\'${quote}\'" >> "processed/${filename}" || echo ">\"${quote}\"" >> "processed/${filename}"
+  [[ $( echo "${quote}" | grep -o '"' ) ]] && echo ">'${quote}'" >> "processed/${filename}" || echo ">\"${quote}\"" >> "processed/${filename}"
   echo "" >> "processed/${filename}"
   echo "${cite}" >> "processed/${filename}"
   echo "" >> "processed/${filename}"
