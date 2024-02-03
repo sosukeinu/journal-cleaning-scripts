@@ -114,7 +114,7 @@ cd tmp && csplit -z --prefix="tmp_notes_" --suppress-matched --digits=3 "../test
 # done
 # This is just for my Latin Quotes
 
-cite="Melton, Buckner F., editor. _The Quotable Founding Fathers: A Treasury of 2,500 Wise and Witty Quotations from the Men and Women Who Created America_. Brassey’s, 2004."
+cite="Augarde, Tony, editor. _The Oxford Dictionary of Modern Quotations. Reissued in new covers_, Oxford Univ. Press, 1996."
 tags="[quote]"
 draft="false"
 timestring=$(date '+%Y-%m-%dT%H:%M:%S%z')
@@ -164,6 +164,7 @@ do
   echo "---" >> "processed/${filename}"
   echo "" >> "processed/${filename}"
   [[ $( echo "${quote}" | grep -Eo '"|“|”' ) ]] && echo ">'${quote}'" >> "processed/${filename}" || echo ">\"${quote}\"" >> "processed/${filename}"
+  # if [[ ${note} != "" ]]; then echo ">-${note}" >> "processed/${filename}"; fi
   echo "" >> "processed/${filename}"
   echo "${cite}" >> "processed/${filename}"
   echo "" >> "processed/${filename}"
