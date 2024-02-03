@@ -114,7 +114,7 @@ cd tmp && csplit -z --prefix="tmp_notes_" --suppress-matched --digits=3 "../test
 # done
 # This is just for my Latin Quotes
 
-cite="Tolkien, J. R. R. _The Lord of the Rings_. Houghton Mifflin Harcourt."
+cite="Melton, Buckner F., editor. _The Quotable Founding Fathers: A Treasury of 2,500 Wise and Witty Quotations from the Men and Women Who Created America_. Brassey’s, 2004."
 tags="[quote]"
 draft="false"
 timestring=$(date '+%Y-%m-%dT%H:%M:%S%z')
@@ -123,8 +123,10 @@ mkdir -p processed
 rm -Rf processed/*
 for f in tmp/tmp_notes_*
 do
-  quote=$(sed -n '/./{p;q;}' "${f}")
-  note=$(sed '0,/--/d' "${f}")
+  # quote=$(sed -n '/./{p;q;}' "${f}")
+  quote=$(awk -v RS='--' 'NR==1' "${f}" | awk '!/^[[:space:]]*$/')
+  # note=$(sed '0,/--/d' "${f}")
+  note=$(awk -v RS='--' 'NR==2' "${f}" | awk '!/^[[:space:]]*$/')
 
 # This is just for my Latin Quotes
   # OIFS=$IFS
@@ -158,9 +160,10 @@ do
   echo "tags: ${tags}" >> "processed/${filename}"
   echo "draft: ${draft}" >> "processed/${filename}"
   echo "title: ${title:0:35}" >> "processed/${filename}"
+  # echo "title: ${note}'s Working Habits" >> "processed/${filename}"
   echo "---" >> "processed/${filename}"
   echo "" >> "processed/${filename}"
-  [[ $( echo "${quote}" | grep -o '"' ) ]] && echo ">'${quote}'" >> "processed/${filename}" || echo ">\"${quote}\"" >> "processed/${filename}"
+  [[ $( echo "${quote}" | grep -Eo '"|“|”' ) ]] && echo ">'${quote}'" >> "processed/${filename}" || echo ">\"${quote}\"" >> "processed/${filename}"
   echo "" >> "processed/${filename}"
   echo "${cite}" >> "processed/${filename}"
   echo "" >> "processed/${filename}"
