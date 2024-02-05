@@ -114,7 +114,7 @@ cd tmp && csplit -z --prefix="tmp_notes_" --suppress-matched --digits=3 "../test
 # done
 # This is just for my Latin Quotes
 
-cite="Augarde, Tony, editor. _The Oxford Dictionary of Modern Quotations. Reissued in new covers_, Oxford Univ. Press, 1996."
+cite="Allison, Robert J., and Bernard Bailyn, editors. _The Essential Debate on the Constitution: Federalist and Antifederalist Speeches and Writings_. Library of America, 2018."
 tags="[quote]"
 draft="false"
 timestring=$(date '+%Y-%m-%dT%H:%M:%S%z')
@@ -163,12 +163,12 @@ do
   # echo "title: ${note}'s Working Habits" >> "processed/${filename}"
   echo "---" >> "processed/${filename}"
   echo "" >> "processed/${filename}"
-  [[ $( echo "${quote}" | grep -Eo '"|“|”' ) ]] && echo ">'${quote}'" >> "processed/${filename}" || echo ">\"${quote}\"" >> "processed/${filename}"
-  # if [[ ${note} != "" ]]; then echo ">-${note}" >> "processed/${filename}"; fi
+  [[ $( echo "${quote}" | grep -Eo '"|“|”' ) ]] && echo ">'${quote}'  " >> "processed/${filename}" || echo ">\"${quote}\"  " >> "processed/${filename}"
+  if [[ ${note} != "" ]]; then echo ">-${note}" >> "processed/${filename}"; fi
   echo "" >> "processed/${filename}"
   echo "${cite}" >> "processed/${filename}"
   echo "" >> "processed/${filename}"
-  if [[ ${note} != "" ]]; then echo "${note}" >> "processed/${filename}"; fi
+  # if [[ ${note} != "" ]]; then echo "${note}" >> "processed/${filename}"; fi
   echo "" >> "processed/${filename}"
 done
 echo "Fin."
