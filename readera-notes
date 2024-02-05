@@ -114,7 +114,7 @@ cd tmp && csplit -z --prefix="tmp_notes_" --suppress-matched --digits=3 "../test
 # done
 # This is just for my Latin Quotes
 
-cite="Allison, Robert J., and Bernard Bailyn, editors. _The Essential Debate on the Constitution: Federalist and Antifederalist Speeches and Writings_. Library of America, 2018."
+cite="Ketcham, Ralph. _The Anti-Federalist Papers ; and, the Constitutional Convention Debates_. Signet Classic, 2003."
 tags="[quote]"
 draft="false"
 timestring=$(date '+%Y-%m-%dT%H:%M:%S%z')
