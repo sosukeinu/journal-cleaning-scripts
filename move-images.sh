@@ -71,17 +71,24 @@ fi
 IMAGES=()
 while IFS=  read -r -d $'\0'; do
     IMAGES+=("$REPLY")
-done < <(find "$dir" -iname "*.webp" -print0)
+done < <(find "$dir" -maxdepth 1 -iname "*.webp" -print0)
 
 # echo "${IMAGES[*]}"
 for IMAGE in "${IMAGES[@]}"; do
   echo "current image: $IMAGE"
-  MATCH=$(grep -rli "$(basename "$IMAGE")" "$dir")
-  echo "current match: $MATCH"
-  if [ -n "${MATCH+x}" ]; then
-    FOLDER=$(basename "$(dirname "$MATCH")")
-    echo "match found in $FOLDER"
-    echo "moving $IMAGE to $dir/$FOLDER/"
-    mv "$IMAGE" "$dir/$FOLDER/"
+  # MATCH=( "$(grep -rli "$(basename "$IMAGE")" "$dir")" )
+  readarray -d '' -t MATCH < <(grep --null -wHRl "$(basename "$IMAGE")" .)
+  echo "current match: ${MATCH[*]}"
+  echo "current match count: ${#MATCH[*]}"
+  if [[ "${#MATCH[@]}" -gt 0 ]]; then
+    for M in "${MATCH[@]}"
+    do
+      grep "$(basename "$IMAGE")" "$M"
+  #     echo "found a match in: $M"
+  #     FOLDER=$(basename "$(dirname "$M")")
+  #     echo "match found in $FOLDER"
+  #     echo "moving $IMAGE to $dir/$FOLDER/"
+  #     # cp "$IMAGE" "$dir/$FOLDER/"
+    done
   fi
 done
